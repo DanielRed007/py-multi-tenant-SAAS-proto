@@ -1,39 +1,28 @@
 # routers/users.py
-from fastapi import APIRouter
-from models import User, UserCreate
+from fastapi import APIRouter, HTTPException, status
+from models import UserCreate, User  # We'll make User a response model soon
+from db import get_all, get_by_id, create  # ← clean separation!
 
-# Create a router (like Express Router)
-router = APIRouter(
-    prefix="/users",  # All routes start with /users
-    tags=["Users"]     # Groups in API docs
-)
+router = APIRouter(prefix="/users", tags=["Users"])
 
-# Fake database (we'll replace this later)
-fake_users_db = [
-    {"id": 1, "name": "Alice", "email": "alice@example.com"},
-    {"id": 2, "name": "Bob", "email": "bob@example.com"}
-]
-
-@router.get("/")
+@router.get("/", response_model=list[User])
 def get_all_users():
-    """Get all users"""
-    return fake_users_db
+    return get_all()
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", response_model=User)
 def get_user(user_id: int):
-    """Get one user by ID"""
-    for user in fake_users_db:
-        if user["id"] == user_id:
-            return user
-    return {"error": "User not found"}
+    user = get_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
 
-@router.post("/")
+@router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate):
-    """Create a new user"""
-    new_user = {
-        "id": len(fake_users_db) + 1,
+    new_user = create({
         "name": user.name,
         "email": user.email
-    }
-    fake_users_db.append(new_user)
+    })
     return new_user
