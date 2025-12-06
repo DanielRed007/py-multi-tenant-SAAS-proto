@@ -1,2 +1,3 @@
-# models/__init__.py   ← THIS LINE IS CRUCIAL
-from .user import User, UserCreate   # ← expose them here!
+from .user import User, UserCreate, UserInDB, Token
+
+__all__ = ["User", "UserCreate", "UserInDB", "Token"]

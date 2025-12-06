@@ -1,12 +1,21 @@
 # main.py
 from fastapi import FastAPI
-from routers import users  # Import your router
+from fastapi.middleware.cors import CORSMiddleware
+from routers import users, auth
 
-app = FastAPI(title="My Simple API")
+app = FastAPI(title="Py Multi-Tenant SAAS Proto", version="0.1.0")
 
-# Include the users router
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Tighten in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router)
 app.include_router(users.router)
 
-@app.get("/")
-def home():
-    return {"message": "Welcome! Visit /docs for API documentation"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
