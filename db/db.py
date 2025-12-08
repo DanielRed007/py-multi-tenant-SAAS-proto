@@ -68,6 +68,7 @@ async def create_user(user: UserCreate) -> dict:
     password = user_dict.pop("password")
     hashed = get_password_hash(password)
     user_dict["hashed_password"] = hashed
+    user_dict["tenant_id"] = tenant["id"]
 
     user_dict["id"] = await increment_counter()
     result = await collection.insert_one(user_dict)

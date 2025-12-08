@@ -4,6 +4,7 @@ from typing import List
 from models import UserCreate, User, UserInDB
 from db import get_all, get_by_id, create_user, update, delete
 from core.security import get_current_user
+from core.tenant import get_current_tenant
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -44,5 +45,10 @@ async def delete_user(user_id: int):
     return None
 
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+async def read_users_me(
+    current_user: User = Depends(get_current_user),
+    tenant: dict = Depends(get_current_tenant)
+):
+    if current_user.get("tenant_id") != tenant["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
     return current_user
