@@ -1,23 +1,94 @@
 # db.py
-from typing import List, Dict, Any
+import motor.motor_asyncio
+from typing import List, Dict, Any, Optional
+from bson import ObjectId
+from models import User, UserCreate
+from core.security import get_password_hash
 
-# This is your fake database for now
-fake_users_db: List[Dict[str, Any]] = [
-    {"id": 1, "name": "Alice", "email": "alice@example.com"},
-    {"id": 2, "name": "Bob", "email": "bob@example.com"},
-]
+# MongoDB connection (async)
+client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
+db = client.myapp  # Your DB name
+collection = db.users  # Collection name
 
-# These are the functions your router will call
-def get_all() -> List[Dict[str, Any]]:
-    return fake_users_db
+# Global counter for simple int IDs (use a separate counter collection in prod)
+_counter = 0
 
-def get_by_id(user_id: int) -> Dict[str, Any] | None:
-    for user in fake_users_db:
-        if user["id"] == user_id:
-            return user
-    return None
+async def get_counter() -> int:
+    global _counter
+    cursor = db.counters.find_one({"_id": "user_id"})
+    if cursor:
+        _counter = cursor.get("seq", 0)
+    else:
+        _counter = 0
+    return _counter
 
-def create(user_data: Dict[str, Any]) -> Dict[str, Any]:
-    user_data["id"] = len(fake_users_db) + 1
-    fake_users_db.append(user_data)
-    return user_data
+async def increment_counter() -> int:
+    global _counter
+    _counter += 1
+    await db.counters.update_one(
+        {"_id": "user_id"},
+        {"$set": {"seq": _counter}},
+        upsert=True
+    )
+    return _counter
+
+# Async CRUD functions (same signatures as your fake DB!)
+async def get_all() -> List[Dict[str, Any]]:
+    users = await collection.find().to_list(length=100)
+    # Convert _id to str for JSON (optional)
+    for user in users:
+        user["id"] = user.get("id", user["_id"])  # Fallback to _id if no int id
+        if "_id" in user:
+            del user["_id"]
+    return users
+
+async def get_by_id(user_id: int):
+    user = await collection.find_one({"id": user_id})
+    if user:
+        user["id"] = user.pop("id", str(user["_id"]))
+        user.pop("_id", None)
+        user.pop("hashed_password", None)
+    return user
+
+async def get_by_email(email: str):
+    user = await collection.find_one({"email": email})
+    if user:
+        user["id"] = user.pop("id", str(user["_id"]))
+        user.pop("_id", None)
+    return user
+
+# db.py
+async def create_user(user: UserCreate) -> dict:
+    existing = await collection.find_one({"email": user.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    user_dict = user.model_dump()
+
+    password = user_dict.pop("password")
+    hashed = get_password_hash(password)
+    user_dict["hashed_password"] = hashed
+    user_dict["tenant_id"] = tenant["id"]
+
+    user_dict["id"] = await increment_counter()
+    result = await collection.insert_one(user_dict)
+
+    created = await collection.find_one({"_id": result.inserted_id})
+    if not created:
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+    created["id"] = created.pop("id", str(created["_id"]))
+    created.pop("_id", None)
+    created.pop("hashed_password", None)
+    return created
+
+
+async def update(user_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    result = await collection.update_one({"id": user_id}, {"$set": update_data})
+    if result.modified_count == 0:
+        return None
+    return await get_by_id(user_id)
+
+async def delete(user_id: int) -> bool:
+    result = await collection.delete_one({"id": user_id})
+    return result.deleted_count > 0
