@@ -40,3 +40,26 @@ sudo systemctl enable mongod   # optional: start on boot
 
 # 5. Run the API
 uvicorn main:app --reload
+
+# Multi-Tenancy – How to activate and use a tenant
+
+### 1. Create your first tenant
+```bash
+curl -X POST http://127.0.0.1:8000/tenants \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp", "subdomain": "acme"}'```
+
+## Multi-Tenancy – How to activate and use a tenant
+
+Access as that tenant (3 easy ways)
+
+```bash
+curl -H "host: acme.localhost:8000" http://127.0.0.1:8000/users/me \
+  -H "Authorization: Bearer <your-jwt>"
+
+## Payload Example:
+
+curl -X POST http://127.0.0.1:8000/auth/register \
+  -H "host: acme.localhost:8000" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John","email":"john@acme.com","password":"secret123"}'

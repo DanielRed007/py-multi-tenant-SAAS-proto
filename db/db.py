@@ -58,25 +58,19 @@ async def get_by_email(email: str):
     return user
 
 # db.py
-async def create_user(user: UserCreate) -> dict:
+async def create_user(user: UserCreate, tenant_id: int) -> dict:
     existing = await collection.find_one({"email": user.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user_dict = user.model_dump()
-
-    password = user_dict.pop("password")
-    hashed = get_password_hash(password)
-    user_dict["hashed_password"] = hashed
-    user_dict["tenant_id"] = tenant["id"]
+    user_dict["tenant_id"] = tenant_id
+    user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
 
     user_dict["id"] = await increment_counter()
     result = await collection.insert_one(user_dict)
 
     created = await collection.find_one({"_id": result.inserted_id})
-    if not created:
-        raise HTTPException(status_code=500, detail="Failed to create user")
-
     created["id"] = created.pop("id", str(created["_id"]))
     created.pop("_id", None)
     created.pop("hashed_password", None)

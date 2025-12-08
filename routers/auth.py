@@ -5,22 +5,25 @@ from models import UserCreate, User, Token
 from db import create_user, get_by_email
 from jose import jwt, JWTError
 from core.security import verify_password, create_access_token, create_refresh_token
+from core.tenant import get_current_tenant
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 SECRET_KEY = "change-me-to-a-random-256-bit-string-in-prod-please"
 
 @router.post("/register", response_model=Token)
-async def register(user: UserCreate):
-    print(user, "My User")
-    new_user = await create_user(user)   # ← pass the whole Pydantic model, not dict
-    
+async def register(
+    user: UserCreate,
+    tenant: dict = Depends(get_current_tenant)
+):
+    new_user = await create_user(user, tenant["id"])
+
     access_token = create_access_token(data={"sub": str(new_user["id"])})
     refresh_token = create_refresh_token(data={"sub": str(new_user["id"])})
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await get_by_email(form_data.username)  # using username as email
+    user = await get_by_email(form_data.username)
     if not user or not verify_password(form_data.password, user.get("hashed_password", "")):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
