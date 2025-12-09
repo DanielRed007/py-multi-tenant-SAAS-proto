@@ -23,5 +23,4 @@ async def get_current_tenant(request: Request) -> dict:
     tenant.pop("_id", None)
     return tenant
 
-# Optional clean alias (use this if you want short syntax)
 current_tenant = Depends(get_current_tenant)

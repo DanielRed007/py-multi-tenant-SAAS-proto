@@ -5,12 +5,10 @@ from bson import ObjectId
 from models import User, UserCreate
 from core.security import get_password_hash
 
-# MongoDB connection (async)
 client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.myapp  # Your DB name
-collection = db.users  # Collection name
+db = client.myapp
+collection = db.users
 
-# Global counter for simple int IDs (use a separate counter collection in prod)
 _counter = 0
 
 async def get_counter() -> int:
@@ -32,12 +30,10 @@ async def increment_counter() -> int:
     )
     return _counter
 
-# Async CRUD functions (same signatures as your fake DB!)
 async def get_all() -> List[Dict[str, Any]]:
     users = await collection.find().to_list(length=100)
-    # Convert _id to str for JSON (optional)
     for user in users:
-        user["id"] = user.get("id", user["_id"])  # Fallback to _id if no int id
+        user["id"] = user.get("id", user["_id"])
         if "_id" in user:
             del user["_id"]
     return users

@@ -9,7 +9,7 @@ from core.tenant import get_current_tenant
 router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.get("/", response_model=List[User])
-async def get_all_users():  # ← async now
+async def get_all_users():
     return await get_all()
 
 @router.get("/me", response_model=User)
@@ -23,8 +23,8 @@ async def read_users_me(
 
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate):  # ← async
-    new_user = await create_user({     # ← await
+async def create_user(user: UserCreate):
+    new_user = await create_user({
         "name": user.name,
         "email": user.email
     })

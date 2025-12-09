@@ -4,7 +4,7 @@ from typing import Optional
 
 class TenantBase(BaseModel):
     name: str
-    subdomain: str                     # e.g. "acme" → acme.yourapp.com
+    subdomain: str
 
 class TenantCreate(TenantBase):
     pass
