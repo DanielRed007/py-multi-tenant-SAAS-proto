@@ -19,4 +19,11 @@ app.include_router(users.router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    from core.config import settings
+
+    uvicorn.run(
+        "main:app",
+        host=settings.APP_HOST,
+        port=settings.APP_PORT,
+        reload=(settings.ENV == "development")
+    )
