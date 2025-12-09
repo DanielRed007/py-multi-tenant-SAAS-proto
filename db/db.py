@@ -4,9 +4,11 @@ from typing import List, Dict, Any, Optional
 from bson import ObjectId
 from models import User, UserCreate
 from core.security import get_password_hash
+from core.config import settings
+import motor.motor_asyncio
 
-client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.myapp
+client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+db = client[settings.DATABASE_NAME]
 collection = db.users
 
 _counter = 0

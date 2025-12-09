@@ -63,3 +63,23 @@ curl -X POST http://127.0.0.1:8000/auth/register \
   -H "host: acme.localhost:8000" \
   -H "Content-Type: application/json" \
   -d '{"name":"John","email":"john@acme.com","password":"secret123"}'
+
+## Environment configuration
+
+Create a .env file with the following custom values:
+
+# .env
+ENV=<your-value>
+
+# MongoDB
+MONGODB_URL=<your-value>
+DATABASE_NAME=<your-value>
+
+# JWT
+SECRET_KEY=<your-value>
+ACCESS_TOKEN_EXPIRE_MINUTES=<your-value>
+REFRESH_TOKEN_EXPIRE_DAYS=<your-value>
+
+# App
+APP_HOST=<your-value>
+APP_PORT=<your-value>

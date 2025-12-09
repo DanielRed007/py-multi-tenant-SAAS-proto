@@ -1,9 +1,11 @@
 # core/tenant.py
 from fastapi import Request, HTTPException, Depends
 import motor.motor_asyncio
+from core.config import settings
 
-client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.myapp
+client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+db = client[settings.DATABASE_NAME]
+
 tenants_collection = db.tenants
 
 async def get_current_tenant(request: Request) -> dict:
